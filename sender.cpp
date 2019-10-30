@@ -33,6 +33,22 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    is unique system-wide among all SYstem V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
+	key_t key;
+	key = ftok("keyfile.txt", 'a');  //generate key
+	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0);  //System call "shmget" that asks for shared memory segment
+	
+	 if(shmid < 0){ 
+        printf("ERROR \n"); // Error Checking
+        exit(-1);
+    }
+	sharedMemPtr = shmat(shmid, NULL, 0); // System call shmat() accepts a shared memory ID: "shmid"
+ 
+    msqid = msgget(key, 0);  //msgget returns message queue identifier associated with the key
+    if(msqid == -1){
+        printf("ERROR \n"); //Error Checking
+        exit(-1);
+    }  
+}
 	
 
 	
@@ -53,6 +69,8 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 {
 	/* TODO: Detach from shared memory */
+	 shmdt(sharedMemPtr); //detaches the shared memory segment located at the address specified by sharedMemPtr
+	
 }
 
 /**
@@ -95,17 +113,32 @@ void send(const char* fileName)
 		/* TODO: Send a message to the receiver telling him that the data is ready 
  		 * (message of type SENDER_DATA_TYPE) 
  		 */
-		
-		/* TODO: Wait until the receiver sends us a message of type RECV_DONE_TYPE telling us 
+		sndMsg.mtype = SENDER_DATA_TYPE;
+		 if(msgsnd(msqid, &sndMsg, sndMsg.size, 0) < 0)
+		 {
+            		printf("ERROR \n");
+            		exit(-1);
+        }
+		 while(rcvMsg.mtype != RECV_DONE_TYPE); 
+		/* Wait until the receiver sends us a message of type RECV_DONE_TYPE telling us 
  		 * that he finished saving the memory chunk. 
  		 */
-	}
+    }
 	
-
-	/** TODO: once we are out of the above loop, we have finished sending the file.
+		
+		
+	 sndMsg.mtype = SENDER_DATA_TYPE;
+   	 sndMsg.size = 0;
+	/** once we are out of the above loop, we have finished sending the file.
  	  * Lets tell the receiver that we have nothing more to send. We will do this by
  	  * sending a message of type SENDER_DATA_TYPE with size field set to 0. 	
 	  */
+	if((msgsnd(msqid, &sndMsg, sndMsg.size, 0)) < 0){
+        
+        printf("ERROR: out of loop\n"); // Error Checking
+        exit(-1);
+    }
+	
 
 		
 	/* Close the file */
