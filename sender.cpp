@@ -35,22 +35,10 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	 */
 	key_t key;
 	key = ftok("keyfile.txt", 'a');  //generate key
+	
 	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0);  //System call "shmget" that asks for shared memory segment
 	
-	 if(shmid < 0){ 
-        printf("ERROR \n"); // Error Checking
-        exit(-1);
-    }
 	sharedMemPtr = shmat(shmid, NULL, 0); // System call shmat() accepts a shared memory ID: "shmid"
- 
-    msqid = msgget(key, 0);  //msgget returns message queue identifier associated with the key
-    if(msqid == -1){
-        printf("ERROR \n"); //Error Checking
-        exit(-1);
-    }  
-}
-	
-
 	
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
 	/* TODO: Attach to the shared memory */
@@ -109,39 +97,21 @@ void send(const char* fileName)
 			exit(-1);
 		}
 		
+		msgsnd(msqid, &sndMsg, sizeof(sndMsg.size), 0);
+		msgrcv(msqid, &rcvMsg, sizeof(rcvMsg.size), RECV_DONE_TYPE, 0);
+	}
 			
 		/* TODO: Send a message to the receiver telling him that the data is ready 
  		 * (message of type SENDER_DATA_TYPE) 
  		 */
-		sndMsg.mtype = SENDER_DATA_TYPE;
-		 if(msgsnd(msqid, &sndMsg, sndMsg.size, 0) < 0)
-		 {
-            		printf("ERROR \n");
-            		exit(-1);
-        }
-		 while(rcvMsg.mtype != RECV_DONE_TYPE); 
+		sndMsg.size = 0;
+		
+		msgsnd(msqid, &sndMsg, sizeof(sndMsg.size), 0);
+		 
 		/* Wait until the receiver sends us a message of type RECV_DONE_TYPE telling us 
  		 * that he finished saving the memory chunk. 
  		 */
-    }
-	
-		
-		
-	 sndMsg.mtype = SENDER_DATA_TYPE;
-   	 sndMsg.size = 0;
-	/** once we are out of the above loop, we have finished sending the file.
- 	  * Lets tell the receiver that we have nothing more to send. We will do this by
- 	  * sending a message of type SENDER_DATA_TYPE with size field set to 0. 	
-	  */
-	if((msgsnd(msqid, &sndMsg, sndMsg.size, 0)) < 0){
-        
-        printf("ERROR: out of loop\n"); // Error Checking
-        exit(-1);
-    }
-	
-
-		
-	/* Close the file */
+    
 	fclose(fp);
 	
 }
