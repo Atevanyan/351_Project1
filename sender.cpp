@@ -36,11 +36,28 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	 */
 	key_t key;
 	key = ftok("keyfile.txt", 'a');  //generate key
+	if(key == -1)
+	{
+		perror("ERROR GETTING KEY"); //Error checking
+		exit(1);
+	}
 	
 	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);  //System call "shmget" that asks for shared memory segment
-	
+	if(shmid == -1)
+	{
+		perror("ERROR RETURNING IDENTIFIER");
+		exit(1);
+	}
+		 
+		       
+		
 	sharedMemPtr = shmat(shmid, (void*)0 ,0); // System call shmat() accepts a shared memory ID: "shmid"
-	msqid = msgget(key, IPC_CREAT|0666);
+	
+	msqid = msgget(key, IPC_CREAT|0666); //Attaching to message queue
+	if(msqid == -1)
+	{
+		perror("ERROR ATTACHING TO MESSAGE QUEUE");
+	}
 	
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
 	/* TODO: Attach to the shared memory */
@@ -60,6 +77,11 @@ void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 {
 	/* TODO: Detach from shared memory */
 	 shmdt(sharedMemPtr); //detaches the shared memory segment located at the address specified by sharedMemPtr
+	if(shmdt(SharedMemPtr == -1)
+	   {
+		   perror("ERROR DETACHING MEMORY SEGMENT");
+		   exit(1);
+	   }
 	
 }
 
@@ -98,43 +120,35 @@ void send(const char* fileName)
 			perror("fread");
 			exit(-1);
 		}
-			cout <<"sndMsg.size= "<<sndMsg.size<<" bytes."<<endl;
-
+			
 		 sndMsg.mtype = SENDER_DATA_TYPE;
-		 int i = msgsnd(msqid, &sndMsg,sizeof(sndMsg),0);
-		 if(i<0)
+		cout <<"Message size: "= "<<sndMsg.size<<" bytes."<<endl;
+
+		 int k;
+		 k = msgsnd(msqid, &sndMsg,sizeof(sndMsg),0);
+		
+		 if( k < 0 )
 		 {
-			 cout <<"message send failed"<<endl;
+			 cout <<"message send failed"<<endl; //Error checking
 		 }
 
-		 if(msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), RECV_DONE_TYPE, 0)
-		 < 0 && (sndMsg.size!=0))
+		 if(msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), RECV_DONE_TYPE, 0) < 0 && (sndMsg.size!=0)) // Error checking (If Sender didn't send and Reciever didn't recieve)
+			 
 		 {
-			 cout <<"error receiving message from Receiver"<<endl;
+			 cout <<"ERROR RECIEVING MESSAGE"<<endl;
 		 }
-		 else if(rcvMsg.mtype == RECV_DONE_TYPE && (sndMsg.size!=0))
+		
+		 else if(rcvMsg.mtype == RECV_DONE_TYPE) // Error Checking (If the recieved message is equal to "done" message from "msg.h")
+			 
 		 {
-			 	cout <<"received message from receiver, keep sending..."<<endl;
+			 	cout <<"RECIEVED MESSAGE..."<<endl;
 		 }
 	}
 
-		if(sndMsg.size!=0)
-				{
-					sndMsg.mtype = SENDER_DATA_TYPE;
-					sndMsg.size = 0;
-					int i = msgsnd(msqid, &sndMsg, sizeof(rcvMsg),0);
-					if(i<0)
-					{
-							cout <<"send size 0 fail"<<endl;
-					}
-					else {
-						cout <<"sent 0 to receiver" <<endl;
-					}
-				}
 
 	/* Close the file */
 	fclose(fp);
-	cout <<"file closed"<<endl;
+	cout <<"Closing File"<<endl;
 }
 
 
