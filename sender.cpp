@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "msg.h"    /* For the message struct */
-
+using namespace std;
 /* The size of the shared memory chunk */
 #define SHARED_MEMORY_CHUNK_SIZE 1000
 
