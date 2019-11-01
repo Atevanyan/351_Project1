@@ -40,7 +40,17 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    is unique system-wide among all System V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
+	key_t key;
+        key = ftok("keyfile.txt", 'a');
 	
+	shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE, 0);
+	
+	
+	
+	sharedMemPtr = shmat(shmid,NULL ,0);
+	
+	
+	 msqid = msgget(key , 0);
 
 	
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
@@ -68,6 +78,9 @@ void mainLoop()
 		perror("fopen");	
 		exit(-1);
 	}
+	
+	message rcvMsg;
+	int j  = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
 		
     /* TODO: Receive the message and get the message size. The message will 
      * contain regular information. The message will be of SENDER_DATA_TYPE
@@ -94,6 +107,24 @@ void mainLoop()
 			{
 				perror("fwrite");
 			}
+			
+			 rcvMsg.mtype = RECV_DONE_TYPE;
+			 int i = msgsnd(msqid, &rcvMsg,sizeof(rcvMsg) ,0);
+			 if(i < 0)
+			 {
+				 	cout <<"message send failed"<<endl;
+			 }
+			
+			 int k  = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
+			
+			 if(k<0)
+				 
+			 {
+				 cout <<"message receive failed"<<endl;
+			 }
+			
+			 msgSize = rcvMsg.size;
+			 cout <<"msgSize = "<<msgSize<<endl;
 			
 			/* TODO: Tell the sender that we are ready for the next file chunk. 
  			 * I.e. send a message of type RECV_DONE_TYPE (the value of size field
@@ -125,6 +156,11 @@ void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 	/* TODO: Deallocate the shared memory chunk */
 	
 	/* TODO: Deallocate the message queue */
+			shmdt(sharedMemPtr);
+	
+			shmctl(shmid,IPC_RMID,NULL);
+	
+			msgctl(msqid, IPC_RMID, NULL);
 }
 
 /**
