@@ -121,7 +121,7 @@ void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 		shmdt(sharedMemPtr);
 			shmctl(shmid,IPC_RMID,NULL);
 			msgctl(msqid, IPC_RMID, NULL);
-			cout <<"clearned up" <<endl;
+			cout <<"Cleaned Up" <<endl;
 }
 
 /**
