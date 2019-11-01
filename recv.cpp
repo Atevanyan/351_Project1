@@ -43,14 +43,14 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	key_t key;
         key = ftok("keyfile.txt", 'a');
 	
-	shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE, 0);
+	shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
 	
 	
 	
-	sharedMemPtr = shmat(shmid,NULL ,0);
+	sharedMemPtr = shmat(shmid,(void*)0 ,0);
 	
 	
-	 msqid = msgget(key , 0);
+	 msqid = msgget(key , IPC_CREAT|0666);
 
 	
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
@@ -80,7 +80,7 @@ void mainLoop()
 	}
 	
 	message rcvMsg;
-	int j  = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
+	
 		
     /* TODO: Receive the message and get the message size. The message will 
      * contain regular information. The message will be of SENDER_DATA_TYPE
@@ -184,13 +184,14 @@ int main(int argc, char** argv)
  	 */
 				
 	/* Initialize */
+	cout <<"Press control C to cleanup and exit"<<endl;
+	signal(SIGINT,ctrlCSignal);
 	init(shmid, msqid, sharedMemPtr);
-	
+
 	/* Go to the main loop */
 	mainLoop();
+	cleanUp(shmid, msqid, sharedMemPtr);
 
-	/** TODO: Detach from shared memory segment, and deallocate shared memory and message queue (i.e. call cleanup) **/
-		
+
 	return 0;
 }
-
