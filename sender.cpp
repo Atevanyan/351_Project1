@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <iostream>
 #include "msg.h"    /* For the message struct */
 
 /* The size of the shared memory chunk */
