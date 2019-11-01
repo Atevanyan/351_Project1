@@ -36,9 +36,10 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	key_t key;
 	key = ftok("keyfile.txt", 'a');  //generate key
 	
-	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0);  //System call "shmget" that asks for shared memory segment
+	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);  //System call "shmget" that asks for shared memory segment
 	
-	sharedMemPtr = shmat(shmid, NULL, 0); // System call shmat() accepts a shared memory ID: "shmid"
+	sharedMemPtr = shmat(shmid, (void*)0 ,0); // System call shmat() accepts a shared memory ID: "shmid"
+	msqid = msgget(key, IPC_CREAT|0666);
 	
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
 	/* TODO: Attach to the shared memory */
@@ -87,7 +88,7 @@ void send(const char* fileName)
 	/* Read the whole file */
 	while(!feof(fp))
 	{
-		/* Read at most SHARED_MEMORY_CHUNK_SIZE from the file and store them in shared memory. 
+		/* Read at most SHARED_MEMORY_CHUNK_SIZE from the file and store them in shared memory.
  		 * fread will return how many bytes it has actually read (since the last chunk may be less
  		 * than SHARED_MEMORY_CHUNK_SIZE).
  		 */
@@ -96,25 +97,45 @@ void send(const char* fileName)
 			perror("fread");
 			exit(-1);
 		}
-		
-		msgsnd(msqid, &sndMsg, sizeof(sndMsg.size), 0);
-		msgrcv(msqid, &rcvMsg, sizeof(rcvMsg.size), RECV_DONE_TYPE, 0);
+			cout <<"sndMsg.size= "<<sndMsg.size<<" bytes."<<endl;
+
+		 sndMsg.mtype = SENDER_DATA_TYPE;
+		 int i = msgsnd(msqid, &sndMsg,sizeof(sndMsg),0);
+		 if(i<0)
+		 {
+			 cout <<"message send failed"<<endl;
+		 }
+
+		 if(msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), RECV_DONE_TYPE, 0)
+		 < 0 && (sndMsg.size!=0))
+		 {
+			 cout <<"error receiving message from Receiver"<<endl;
+		 }
+		 else if(rcvMsg.mtype == RECV_DONE_TYPE && (sndMsg.size!=0))
+		 {
+			 	cout <<"received message from receiver, keep sending..."<<endl;
+		 }
 	}
-			
-		/* TODO: Send a message to the receiver telling him that the data is ready 
- 		 * (message of type SENDER_DATA_TYPE) 
- 		 */
-		sndMsg.size = 0;
-		
-		msgsnd(msqid, &sndMsg, sizeof(sndMsg.size), 0);
-		 
-		/* Wait until the receiver sends us a message of type RECV_DONE_TYPE telling us 
- 		 * that he finished saving the memory chunk. 
- 		 */
-    
+
+		if(sndMsg.size!=0)
+				{
+					sndMsg.mtype = SENDER_DATA_TYPE;
+					sndMsg.size = 0;
+					int i = msgsnd(msqid, &sndMsg, sizeof(rcvMsg),0);
+					if(i<0)
+					{
+							cout <<"send size 0 fail"<<endl;
+					}
+					else {
+						cout <<"sent 0 to receiver" <<endl;
+					}
+				}
+
+	/* Close the file */
 	fclose(fp);
-	
+	cout <<"file closed"<<endl;
 }
+
 
 
 int main(int argc, char** argv)
