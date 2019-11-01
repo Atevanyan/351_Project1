@@ -29,14 +29,30 @@ const char recvFileName[] = "recvfile";
 
 void init(int& shmid, int& msqid, void*& sharedMemPtr)
 {
-	key_t key = 	ftok("keyfile.txt",'a');
+	key_t key;
+	key = 	ftok("keyfile.txt",'a');
 	if (key < 0)
  {
-			 cout <<"dont have a key yet: " <<key<<endl;
+			 perror("ERROR GETTING KEY");
+			 exit(1);
  }
+	
 		shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+		if( shmid == -1)
+		{
+			perror("ERROR GETTING MEMORY SEGMENT");
+			exit(1);
+		}
+	
 		sharedMemPtr = shmat(shmid, (void*)0 ,0);
-			msqid = msgget(key, IPC_CREAT|0666);
+	
+		msqid = msgget(key, IPC_CREAT|0666);
+	
+		if (msqid == -1)
+		{
+			perror("ERROR ATTACHING TO MESSAGE QUEUE");
+			exit(1);
+		}
 }
 
 
