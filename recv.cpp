@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "msg.h"    /* For the message struct */
+using namespace std;
 
 
 /* The size of the shared memory chunk */
