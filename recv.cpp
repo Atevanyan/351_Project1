@@ -75,11 +75,12 @@ void mainLoop()
 	}
 
 	message rcvMsg;
-	int j  = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
-	if(j<0)
+	if( msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0) < 0)
 	{
-		cout <<"message receive failed"<<endl;
+		perror("ERROR");
+		exit(1);
 	}
+	
 	msgSize = rcvMsg.size;
 	cout <<"msgSize = "<<msgSize<<endl;
 
@@ -99,26 +100,27 @@ void mainLoop()
 				perror("fwrite");
 			}
 			rcvMsg.mtype = RECV_DONE_TYPE;
-			 int i = msgsnd(msqid, &rcvMsg,sizeof(rcvMsg) ,0);
-			 if(i < 0)
+			 if( msgsnd(msqid, &rcvMsg,sizeof(rcvMsg) ,0) < 0 );
+			{
+				perror("ERROR");
+				exit(1);
+			}
+			 iif(msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0) < 0 )
 			 {
-				 	cout <<"message send failed"<<endl;
-			 }
-			 int j  = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
-			 if(j<0)
-			 {
-				 cout <<"message receive failed"<<endl;
+			 perror("ERROR");
+			 exit(1);
+				 
 			 }
 			 msgSize = rcvMsg.size;
 			 cout <<"msgSize = "<<msgSize<<endl;
 		}
 		/* We are done */
-		//need to change to if(msgSize==0)
-		if(msgSize==0)
+		
+		if( msgSize == 0)
 		{
 			/* Close the file */
 			fclose(fp);
-			cout <<"file closed"<<endl;
+			cout <<"FINISHED SENDING FILE"<<endl;
 		}
 	}
 }
@@ -133,11 +135,31 @@ void mainLoop()
  */
 
 void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
-{
+{		printf("Ctrl C has been pressed...");
 		shmdt(sharedMemPtr);
-			shmctl(shmid,IPC_RMID,NULL);
+ 
+ 		if(shmdt(sharedMemPtr == 0)
+		   {
+			   perror("ERROR");
+			   exit(1);
+		   }
+		   
+		shmctl(shmid,IPC_RMID,NULL);
+		   
+		   if(shmctl(shmid,IPC_RMID,NULL) == 0)
+		   {
+			   perror("ERROR");
+			   exit(1);
+		   }
 			msgctl(msqid, IPC_RMID, NULL);
-			cout <<"Cleaned Up" <<endl;
+		      
+		      if(msgctl(msqid, IPC_RMID, NULL) == 0)
+		   {
+			   perror("ERROR");
+			   exit(1);
+		   }
+		   else
+			cout <<"Cleaned UP" <<endl;
 }
 
 /**
@@ -147,10 +169,9 @@ void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 
 void ctrlCSignal(int signal)
 {
-	/* Free system V resources */
+	
 	cleanUp(shmid, msqid, sharedMemPtr);
-	exit(1);
-	cout <<" exited " <<endl;
+	
 }
 
 int main(int argc, char** argv)
